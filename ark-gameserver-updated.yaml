@@ -1,0 +1,36 @@
+apiVersion: "agones.dev/v1"
+kind: GameServer
+metadata:
+  name: ark-gameserver-old
+spec:
+  ports:
+  - name: default
+    portPolicy: Dynamic
+    containerPort: 7777
+    protocol: UDP
+  - name: second
+    portPolicy: Dynamic
+    containerPort: 7778
+    protocol: UDP
+  - name: rcon
+    containerPort: 27015
+    protocol: UDP
+  template:
+    spec:
+      containers:
+      - name: ark-server
+        image: asabhi6776/arkserver:agones-gs-1.1
+      #   # resources:
+      #   #   requests:
+      #   #     memory: "64Mi"
+      #   #     cpu: "20m"
+      #   #   limits:
+      #   #     memory: "128Mi"
+      #   #     cpu: "30m"
+        volumeMounts:
+        - name: game-pvc-volume
+          mountPath: /home/steam/ark-server
+      volumes:
+      - name: game-pvc-volume
+        persistentVolumeClaim:
+          claimName: game-pvc
