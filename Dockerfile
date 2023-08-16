@@ -1,9 +1,13 @@
 # --- First Stage: Downloading and Installing ---
-FROM debian:buster-slim as builder
+FROM ubuntu:20.04 as builder
+
+# Prevent interactive prompts during package installation
+ENV DEBIAN_FRONTEND=noninteractive
 
 # Update and install dependencies
-RUN apt-get update && \
-    apt-get install -y lib32gcc1 wget && \
+RUN dpkg --add-architecture i386 && \
+    apt-get update && \
+    apt-get install -y lib32gcc1 wget ca-certificates && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
