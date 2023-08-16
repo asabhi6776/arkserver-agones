@@ -1,36 +1,55 @@
-# Use a base image with SteamCMD, as Ark is distributed via Steam
-FROM cm2network/steamcmd:latest
+# --- First Stage: Downloading and Installing ---
+FROM debian:bullseye-slim as builder
 
-# Set environment variables for the Ark server
-ENV ARK_DIR /home/steam/ark-server
-ENV STEAMCMD_DIR /home/steam/steamcmd
-ENV STEAMCMD_APPID 376030
-ENV VALIDATE ""
-ENV ADMIN_PASSWORD=defaultpassword
-ENV ISLAND_NAME=TheIsland
+# Update and install dependencies
+RUN apt-get update && \
+    apt-get install -y lib32gcc1 wget && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
-# Create the directory for the Ark server
-RUN mkdir -p $ARK_DIR
+# Create a user for the ARK server
+RUN useradd -m ark
 
-# Install the Ark server using SteamCMD
-RUN $STEAMCMD_DIR/steamcmd.sh \
-    +login anonymous \
-    +force_install_dir $ARK_DIR \
-    +app_update $STEAMCMD_APPID $VALIDATE \
-    +quit
+# Switch to the new user
+USER ark
 
-# Expose necessary ports
-# Note: You might need to adjust these based on your server's configuration
-EXPOSE 7777/udp
-EXPOSE 7778/udp
-EXPOSE 27015/udp
+# Set the home directory
+WORKDIR /home/ark
 
-# Set the working directory
-WORKDIR $ARK_DIR
+# Install SteamCMD
+RUN mkdir steamcmd && \
+    cd steamcmd && \
+    wget http://media.steampowered.com/installer/steamcmd_linux.tar.gz && \
+    tar -xvzf steamcmd_linux.tar.gz && \
+    ./steamcmd.sh +quit
 
-# Command to run the Ark server
-# CMD ["ShooterGame/Binaries/Linux/ShooterGameServer", "${ISLAND_NAME}?listen?ServerAdminPassword=${ADMIN_PASSWORD}", "-server", "-log"]
-COPY start-ark.sh /start-ark.sh
+# Download and install ARK server
+RUN /home/ark/steamcmd/steamcmd.sh +login anonymous \
+                                   +force_install_dir /home/ark/server \
+                                   +app_update 376030 validate \
+                                   +quit
 
-# Set the entry point to the start script
-ENTRYPOINT ["/start-ark.sh"]
+# --- Second Stage: Setting up for Execution ---
+FROM debian:bullseye-slim
+
+# Update and install only the essential dependencies
+RUN apt-get update && \
+    apt-get install -y lib32gcc1 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create a user for the ARK server
+RUN useradd -m ark
+
+# Switch to the new user
+USER ark
+
+# Set the home directory
+WORKDIR /home/ark
+
+# Copy only the necessary directories from the builder image
+COPY --from=builder /home/ark/server /home/ark/server
+
+# Set the entrypoint
+COPY entrypoint.sh /home/ark/entrypoint.sh
+ENTRYPOINT ["/home/ark/entrypoint.sh"]
