@@ -1,5 +1,5 @@
 # --- First Stage: Downloading and Installing ---
-FROM debian:bullseye-slim as builder
+FROM debian:buster-slim as builder
 
 # Update and install dependencies
 RUN apt-get update && \
@@ -30,7 +30,7 @@ RUN /home/ark/steamcmd/steamcmd.sh +login anonymous \
                                    +quit
 
 # --- Second Stage: Setting up for Execution ---
-FROM debian:bullseye-slim
+FROM debian:buster-slim
 
 # Update and install only the essential dependencies
 RUN apt-get update && \
