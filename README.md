@@ -22,7 +22,7 @@ LoadBalancer IP
 
 ## Installation
 
-```
+```bash
 kubectl apply -f ark-gameserver-updated.yaml
 kubectl get gameserver
 # wait for the server until it will be in ready condition
